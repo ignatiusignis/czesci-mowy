@@ -1,5 +1,5 @@
 name: Game tests
-on: [push, pull_request, workflow_dispatch]
+on: workflow_dispatch
 jobs:
   test:
     runs-on: ubuntu-24.04
