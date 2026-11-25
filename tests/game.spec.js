@@ -22,10 +22,10 @@ test('practice feedback, correction, goal and pause',async({page})=>{
  const ids=await page.evaluate(()=>({good:practiceWords.findIndex(x=>x.category===practiceTarget),bad:practiceWords.findIndex(x=>x.category!==practiceTarget)}));
  await page.locator('#practiceGrid button').nth(ids.bad).click();await page.locator('#practiceCheck').click();
  await expect(page.locator('#practiceGrid button').nth(ids.bad)).toContainText('błąd');await expect(page.locator('#practiceGrid button').nth(ids.good)).toContainText('jeszcze to');
- await page.locator('#practiceGrid button').nth(ids.bad).click();
+ await page.clock.runFor(1000);await expect(page.locator('#practiceShot')).toBeVisible();await page.clock.runFor(1600);await expect(page.locator('#practiceGoal')).toHaveText('PUDŁO!');expect(await page.evaluate(()=>practiceGoals)).toBe(0);await page.clock.runFor(600);await expect(page.locator('#practice')).toBeVisible();await page.locator('#practiceGrid button').nth(ids.bad).click();
  const targets=await page.evaluate(()=>practiceWords.map((x,i)=>x.category===practiceTarget?i:-1).filter(i=>i>=0));
  for(const i of targets)await page.locator('#practiceGrid button').nth(i).click();
- await page.locator('#practiceCheck').click();await page.clock.runFor(600);await expect(page.locator('#practiceShot')).toBeVisible();
+ await page.locator('#practiceCheck').click();await page.clock.runFor(1000);await expect(page.locator('#practiceShot')).toBeVisible();
  await page.evaluate(()=>pauseGame());await page.clock.runFor(5000);await expect(page.locator('#pause')).toBeVisible();await page.evaluate(()=>resumeGame());await page.clock.runFor(2200);await expect(page.locator('#practiceScore')).toHaveText('⚽ Gole: 1');
 });
 test('two independent touch pointers and no ghost click',async({page})=>{
