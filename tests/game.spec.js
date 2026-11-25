@@ -15,3 +15,21 @@ for(const mode of [1,2])test('complete match '+mode,async({page})=>{
  }await expect(page.locator('#summaryTitle')).toHaveText('Koniec meczu!');expect(errors).toEqual([]);
 });
 test('pause and restart',async({page})=>{await page.goto('/');await page.clock.install();await page.evaluate(()=>{setup(2);start()});await page.clock.runFor(1000);await page.evaluate(()=>pauseGame());await page.clock.runFor(10000);await expect(page.locator('#pause')).toBeVisible();await page.evaluate(()=>resumeGame());await page.clock.runFor(3000);await expect(page.locator('#bottom .answers button')).toHaveCount(3);await page.evaluate(()=>{pauseGame();restartGame()});expect(await page.evaluate(()=>scores)).toEqual([0,0]);await page.clock.runFor(3500);await expect(page.locator('#bottom .answers button')).toHaveCount(3)});
+
+test('practice feedback, correction, goal and pause',async({page})=>{
+ await page.goto('/');await page.clock.install();await page.evaluate(()=>{selected=labels.map((_,i)=>i);openMenu(true);startPractice()});
+ await expect(page.locator('#practiceGrid button')).toHaveCount(20);
+ const ids=await page.evaluate(()=>({good:practiceWords.findIndex(x=>x.category===practiceTarget),bad:practiceWords.findIndex(x=>x.category!==practiceTarget)}));
+ await page.locator('#practiceGrid button').nth(ids.bad).click();await page.locator('#practiceCheck').click();
+ await expect(page.locator('#practiceGrid button').nth(ids.bad)).toContainText('błąd');await expect(page.locator('#practiceGrid button').nth(ids.good)).toContainText('jeszcze to');
+ await page.locator('#practiceGrid button').nth(ids.bad).click();
+ const targets=await page.evaluate(()=>practiceWords.map((x,i)=>x.category===practiceTarget?i:-1).filter(i=>i>=0));
+ for(const i of targets)await page.locator('#practiceGrid button').nth(i).click();
+ await page.locator('#practiceCheck').click();await page.clock.runFor(600);await expect(page.locator('#practiceShot')).toBeVisible();
+ await page.evaluate(()=>pauseGame());await page.clock.runFor(5000);await expect(page.locator('#pause')).toBeVisible();await page.evaluate(()=>resumeGame());await page.clock.runFor(2200);await expect(page.locator('#practiceScore')).toHaveText('⚽ Gole: 1');
+});
+test('two independent touch pointers and no ghost click',async({page})=>{
+ await page.goto('/');await page.clock.install();await page.evaluate(()=>{setup(2);start()});await page.clock.runFor(3500);
+ await page.evaluate(()=>{const a=document.querySelector('#bottom .answers button'),b=document.querySelector('#top .answers button');for(const [i,el] of [a,b].entries())el.dispatchEvent(new PointerEvent('pointerdown',{pointerType:'touch',pointerId:i+1,bubbles:true,cancelable:true}));for(const id of ['bottom','top'])document.querySelector('#'+id+' .answers button').dispatchEvent(new MouseEvent('click',{detail:1,bubbles:true}));});
+ expect(await page.evaluate(()=>data.map(d=>d.idx))).toEqual([1,1]);
+});
